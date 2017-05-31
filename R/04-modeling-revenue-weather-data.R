@@ -21,7 +21,7 @@ rev_ts_model <-
 # as.formula(c("Earnings~",paste0(names(rev_ts_model)[names(rev_ts_model)!="Earnings"], collapse = "+")))
 
 full_model <- as.formula(
-  Earnings ~ Year.x + Max_TemperatureF + Mean_TemperatureF + Min_TemperatureF + 
+  Earnings ~  Max_TemperatureF + Mean_TemperatureF + Min_TemperatureF + 
     Max_Dew_PointF + MeanDew_PointF + Min_DewpointF + Max_Humidity + 
     Mean_Humidity + Min_Humidity + Max_Sea_Level_PressureIn + 
     Mean_Sea_Level_PressureIn + Min_Sea_Level_PressureIn + Max_VisibilityMiles + 
@@ -33,13 +33,17 @@ full_model <- as.formula(
   )
 
 
+full_lm <- lm(formula = full_model, data = rev_ts_model)
+summary(full_lm)
+
+
 
 # trail 1. Full model  --------------------------------------------------------
 
 f1 <- as.formula(
   Earnings~ 
-    #Mean_TemperatureF+
-    poly(Mean_TemperatureF,2)+
+    Mean_TemperatureF+
+    #poly(Mean_TemperatureF,2)+
     #I(Mean_TemperatureF^2)+
     MeanDew_PointF+
     Mean_Humidity+
@@ -48,15 +52,15 @@ f1 <- as.formula(
     Mean_Wind_SpeedMPH+
     Max_Gust_SpeedMPH+
     PrecipitationIn+
-    CloudCover+
+    CloudCover
+    #Special
     #Events+
-    WindDirDegrees
-    #Special+
+    #WindDirDegrees
     #Happy_Hour+
     #Special_ind
   )
 
-f1_lm <- lm(formula = f1, data = rev_ts_model_ex_spec)
+f1_lm <- lm(formula = f1, data = rev_ts_model)
 summary(f1_lm)
 
 
@@ -66,9 +70,7 @@ summary(f1_glm)
 
 
 
-
-
-# trail 2. temp & precipitation -----------------------------------------------
+# trial 2. temp & precipitation -----------------------------------------------
 f2 <- as.formula(
   Earnings~ 
     Mean_TemperatureF+
@@ -115,6 +117,8 @@ f2_glm <- glm(formula = f2
 summary(f2_glm)
 
 
+
+
 # modeling temp -----------------------------------------------------------
 
 
@@ -124,12 +128,6 @@ f4_lm <- lm(formula = f4
             , data = rev_ts_model %>% filter(Earnings<4000)
 )
 summary(f4_lm)
-
-
-f2_glm <- glm(formula = f2
-              , data = rev_ts_model
-)
-summary(f2_glm)
 
 
 
