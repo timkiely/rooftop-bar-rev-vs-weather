@@ -9,7 +9,7 @@ rev_ts <- readRDS("weather-revenue-data-v002.rds")
 rev_ts_model <- 
   rev_ts %>% mutate(Happy_Hour = grepl("Happy Hour",Special)
                     ,Special_ind = ifelse(is.na(Special),FALSE,TRUE)
-                    ,Rain_ind = grepl("Rain",Events)
+                    ,Rain_ind = ifelse(PrecipitationIn>0.5,TRUE,FALSE)
                     ,Events = factor(Events)) %>% 
   filter(Earnings>0) %>% 
   filter(!is.na(Earnings))
@@ -37,7 +37,10 @@ full_model <- as.formula(
 # trail 1. Full model  --------------------------------------------------------
 
 f1 <- as.formula(
-  Earnings~ Mean_TemperatureF+
+  Earnings~ 
+    #Mean_TemperatureF+
+    poly(Mean_TemperatureF,2)+
+    #I(Mean_TemperatureF^2)+
     MeanDew_PointF+
     Mean_Humidity+
     Mean_Sea_Level_PressureIn+
@@ -46,17 +49,16 @@ f1 <- as.formula(
     Max_Gust_SpeedMPH+
     PrecipitationIn+
     CloudCover+
-    Events+
-    WindDirDegrees+
-    Special+
-    Happy_Hour+
-    Special_ind
+    #Events+
+    WindDirDegrees
+    #Special+
+    #Happy_Hour+
+    #Special_ind
   )
 
-f1_lm <- lm(formula = f1, data = rev_ts_model)
+f1_lm <- lm(formula = f1, data = rev_ts_model_ex_spec)
 summary(f1_lm)
 
-alias(f1_lm)
 
 f1_glm <- glm(formula = f1, data = rev_ts_model)
 summary(f1_glm)
@@ -88,6 +90,46 @@ f2_glm <- glm(formula = f2
 )
 summary(f2_glm)
 
+
+
+# tial 3 log earnings --------------------------------------------------------
+
+f3 <- as.formula(
+  log(Earnings)~ 
+    Mean_TemperatureF+
+    PrecipitationIn+
+    CloudCover+
+    Special+
+    Rain_ind
+)
+
+f3_lm <- lm(formula = f3
+            , data =rev_ts_model
+)
+summary(f3_lm)
+
+
+f2_glm <- glm(formula = f2
+              , data =rev_ts_model
+)
+summary(f2_glm)
+
+
+# modeling temp -----------------------------------------------------------
+
+
+f4 <- as.formula(Earnings ~ Mean_TemperatureF)
+
+f4_lm <- lm(formula = f4
+            , data = rev_ts_model %>% filter(Earnings<4000)
+)
+summary(f4_lm)
+
+
+f2_glm <- glm(formula = f2
+              , data = rev_ts_model
+)
+summary(f2_glm)
 
 
 
