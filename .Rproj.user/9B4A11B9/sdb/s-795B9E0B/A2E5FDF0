@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "\n\n# scrape weather data from wunderground \n\nlibrary(weatherData)\nlibrary(tidyverse)\n\n# look up station code\ngetStationCode(\"Manhattan\", region = \"NY\")\ngetStationCode(\"New York\", region = \"NY\")\ncheckDataAvailabilityForDateRange(\"KNYC\", \"2015-01-01\", \"2017-05-30\")\n\n\n\ngetWeatherForYear2 <- \n  function (station_id, year, station_type = \"airportCode\", opt_detailed = TRUE, \n          opt_write_to_file = FALSE, opt_all_columns = TRUE) \n{\n  if (year == (1900 + as.POSIXlt(Sys.Date())$year)) {\n    last_day <- Sys.Date()\n  }\n  else {\n    last_day <- paste0(year, \"-12-31\")\n  }\n  first_day <- paste0(year, \"-01-01\")\n  getWeatherForDate(station_id, first_day, last_day, station_type, \n                    opt_detailed, opt_all_columns = opt_all_columns)\n}\n\nny_2015 <- getWeatherForYear2(station_id=\"KLGA\", year = 2015)\nny_2016 <- getWeatherForYear2(station_id=\"KLGA\", year = 2016)\nny_2017 <- getWeatherForYear2(station_id=\"KLGA\", year = 2017)\n\nny_2015_clean <- ny_2015 %>% select(-Date) %>% tbl_df() %>% mutate(Date = lubridate::ymd(EST))\nny_2016_clean <- ny_2016 %>% select(-Date) %>% tbl_df() %>% mutate(Date = lubridate::ymd(EST))\nny_2017_clean <- ny_2017 %>% select(-Date) %>% tbl_df() %>% mutate(Date = lubridate::ymd(EDT))\n\n\nlga_data <- bind_rows(list(\"2015\"=ny_2015_clean\n                           , \"2016\" = ny_2016_clean\n                           , \"2017\" = ny_2017_clean\n                           )\n                           , .id = \"Year\")\n\n\nwrite_csv(lga_data,\"Weather-NYC-2017-05-30.csv\")\n\n\n\n\n\n\n\n\n",
+    "created" : 1496175971652.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1787779137",
+    "id" : "A2E5FDF0",
+    "lastKnownWriteTime" : 1496258027,
+    "last_content_update" : 1496258027055,
+    "path" : "~/Dropbox (hodgeswardelliott)/hodgeswardelliott Team Folder/Teams/Data/Tim_Kiely/Weather vs Revenue/scrape-manhattan-weather-data.R",
+    "project_path" : "scrape-manhattan-weather-data.R",
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

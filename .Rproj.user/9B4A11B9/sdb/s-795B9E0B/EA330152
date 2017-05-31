@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "\n# Modeling the data, looking for inferences e.g., how much rev is lost to rain?\n\nrm(list=ls())\nlibrary(tidyverse)\n\nrev_ts <- readRDS(\"weather-revenue-data-v002.rds\")\n\nrev_ts_model <- \n  rev_ts %>% mutate(Happy_Hour = grepl(\"Happy Hour\",Special)\n                    ,Special_ind = ifelse(is.na(Special),FALSE,TRUE)\n                    ,Rain_ind = ifelse(PrecipitationIn>0.5,TRUE,FALSE)\n                    ,Events = factor(Events)) %>% \n  filter(Earnings>0) %>% \n  filter(!is.na(Earnings))\n\n\n\n# generate formula text  ------------------------------------------------------\n## use this to generate formula text in the console:\n# as.formula(c(\"Earnings~\",paste0(names(rev_ts_model)[names(rev_ts_model)!=\"Earnings\"], collapse = \"+\")))\n\nfull_model <- as.formula(\n  Earnings ~ Year.x + Max_TemperatureF + Mean_TemperatureF + Min_TemperatureF + \n    Max_Dew_PointF + MeanDew_PointF + Min_DewpointF + Max_Humidity + \n    Mean_Humidity + Min_Humidity + Max_Sea_Level_PressureIn + \n    Mean_Sea_Level_PressureIn + Min_Sea_Level_PressureIn + Max_VisibilityMiles + \n    Mean_VisibilityMiles + Min_VisibilityMiles + Max_Wind_SpeedMPH + \n    Mean_Wind_SpeedMPH + Max_Gust_SpeedMPH + PrecipitationIn + \n    CloudCover + Events + WindDirDegrees + Date + Earnings + \n    Day + Day_lab + Month + Year.y + Special + Year + Happy_Hour + \n    Special_ind + Rain_ind\n  )\n\n\n\n# trail 1. Full model  --------------------------------------------------------\n\nf1 <- as.formula(\n  Earnings~ \n    #Mean_TemperatureF+\n    poly(Mean_TemperatureF,2)+\n    #I(Mean_TemperatureF^2)+\n    MeanDew_PointF+\n    Mean_Humidity+\n    Mean_Sea_Level_PressureIn+\n    Mean_VisibilityMiles+\n    Mean_Wind_SpeedMPH+\n    Max_Gust_SpeedMPH+\n    PrecipitationIn+\n    CloudCover+\n    #Events+\n    WindDirDegrees\n    #Special+\n    #Happy_Hour+\n    #Special_ind\n  )\n\nf1_lm <- lm(formula = f1, data = rev_ts_model_ex_spec)\nsummary(f1_lm)\n\n\nf1_glm <- glm(formula = f1, data = rev_ts_model)\nsummary(f1_glm)\n\n\n\n\n\n\n# trail 2. temp & precipitation -----------------------------------------------\nf2 <- as.formula(\n  Earnings~ \n    Mean_TemperatureF+\n    Max_TemperatureF+\n    Min_TemperatureF+\n    PrecipitationIn+\n    CloudCover+\n    Rain_ind\n)\n\nf2_lm <- lm(formula = f2\n            , data =rev_ts_model\n)\nsummary(f2_lm)\n\n\nf2_glm <- glm(formula = f2\n              , data =rev_ts_model\n)\nsummary(f2_glm)\n\n\n\n# tial 3 log earnings --------------------------------------------------------\n\nf3 <- as.formula(\n  log(Earnings)~ \n    Mean_TemperatureF+\n    PrecipitationIn+\n    CloudCover+\n    Special+\n    Rain_ind\n)\n\nf3_lm <- lm(formula = f3\n            , data =rev_ts_model\n)\nsummary(f3_lm)\n\n\nf2_glm <- glm(formula = f2\n              , data =rev_ts_model\n)\nsummary(f2_glm)\n\n\n# modeling temp -----------------------------------------------------------\n\n\nf4 <- as.formula(Earnings ~ Mean_TemperatureF)\n\nf4_lm <- lm(formula = f4\n            , data = rev_ts_model %>% filter(Earnings<4000)\n)\nsummary(f4_lm)\n\n\nf2_glm <- glm(formula = f2\n              , data = rev_ts_model\n)\nsummary(f2_glm)\n\n\n\n\n\n\n",
+    "created" : 1495569818750.000,
+    "dirty" : true,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2429137554",
+    "id" : "EA330152",
+    "lastKnownWriteTime" : 1496252642,
+    "last_content_update" : 1496260524153,
+    "path" : "~/Dropbox (hodgeswardelliott)/hodgeswardelliott Team Folder/Teams/Data/Tim_Kiely/Weather vs Revenue/modeling-revenue-weather-data.R",
+    "project_path" : "modeling-revenue-weather-data.R",
+    "properties" : {
+        "docOutlineVisible" : "0",
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

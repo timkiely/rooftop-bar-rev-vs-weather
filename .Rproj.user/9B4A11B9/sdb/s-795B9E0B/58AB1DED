@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "\n\nlibrary(modelr)\noptions(na.action = na.warn)\n\nmodels <- tibble(\n  a1 = runif(250, -20, 40),\n  a2 = runif(250, -5, 5)\n)\n\n\n\ndata_grid(rev_ts_model, .model = f3_lm)\n\n\ngrid <-\n  rev_ts_model %>% \n  data_grid(Mean_TemperatureF) \n\nsim1_mod <- loess(Earnings~Mean_TemperatureF, data = rev_ts_model)\n\ngrid <- grid %>% add_predictions(sim1_mod)\n\nrev_ts_model %>% \n  ggplot() + \n  aes(x=Mean_TemperatureF) +\n  geom_point(aes(y = Earnings)) +\n  geom_line(aes(y = pred), data = grid, colour = \"red\", size = 1)\n\n\nrev_ts_model %>% \n  add_predictions(sim1_mod) %>% \n  add_residuals(sim1_mod) %>% \n  ggplot(aes(resid)) + \n  geom_freqpoly(binwidth = 0.5)\n\nrev_ts_model %>% \n  add_predictions(sim1_mod) %>% \n  add_residuals(sim1_mod) %>% \n  ggplot(aes(Mean_TemperatureF, resid)) + \n  geom_ref_line(h = 0) +\n  geom_point() \n\n\n\ndf <- tribble(\n  ~y, ~x1, ~x2,\n   4,   2,   5,\n   5,   1,   6\n)\n\nmodel_matrix(df, y ~ x1 + x2 )\n\n\nlibrary(splines)\n\n\nmod1 <- lm(Earnings ~ ns(Mean_TemperatureF, 5), data = rev_ts_model)\n\n\ngrid <- rev_ts_model %>% \n  data_grid(x = seq_range(x, n = 50, expand = 0.1)) %>% \n  gather_predictions(mod1, .pred = \"y\")\n\nggplot(sim5, aes(x, y)) + \n  geom_point() +\n  geom_line(data = grid, colour = \"red\") +\n  facet_wrap(~ model)\n\n",
+    "created" : 1496255149584.000,
+    "dirty" : true,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "94831896",
+    "id" : "58AB1DED",
+    "lastKnownWriteTime" : 7450202176836170752,
+    "last_content_update" : 1496260132152,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 5,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
