@@ -1,3 +1,6 @@
+View on [github.io](https://timkiely.github.io/rooftop-bar-rev-vs-weather/)
+
+
 Effect of Weather on Rooftop Bar Revenues
 ================
 
