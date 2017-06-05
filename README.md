@@ -317,3 +317,8 @@ summary(f6_lm)
     ## Residual standard error: 740 on 404 degrees of freedom
     ## Multiple R-squared:  0.01385,    Adjusted R-squared:  0.01141 
     ## F-statistic: 5.676 on 1 and 404 DF,  p-value: 0.01766
+
+Conclusion
+==========
+
+Temperature can be used to effectively model Rooftop Bar Earnings up to a point. The relationship is not linear, however. Earnings tend to peak around 75 degrees (F), then trail off as the air gets warmer. Reccomendations to increase revenue might include building an enclosure of some kind to provide both heating and shade which will enable the bar to operate more days out of the year near full capacity.
