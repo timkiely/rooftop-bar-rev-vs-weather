@@ -4,7 +4,8 @@ output: github_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = FALSE
+                      , show = TRUE)
 ```
 
 We're interested in the revenues of a rooftop bar in NYC vs the weather on corresponding days. Is there and headroom for revenue growth by, for example, building an enclosure? Would heating or covering the roofdeck bring in additional revenue? How much do you lose per year to rain?
@@ -18,7 +19,8 @@ There are many potenital "stations" you can gather weather data from. It is impo
 
 I modified the `getWeatherForYear` function slightly, as the out-of-the-box solution wasn't scraping the API correctly. In addition, I found that scraping the years individually worked, while supplying a range of dates did not. If you wanted to scrape several years of data, one of the `purrr::map()` funtions could make that possible.  
 
-```{r, eval=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE, show=T}
 
 getWeatherForYear2 <- 
   function (station_id, year, station_type = "airportCode", opt_detailed = TRUE, 
@@ -37,7 +39,8 @@ getWeatherForYear2 <-
 
 ```
 
-The final data was concatenated into a single dataframe and written to disk for analysis:
+
+The final is was concatenated into a single dataframe and written to disk for analysis:
 
 ```{r}
 
@@ -54,7 +57,8 @@ suppressMessages({
 
 For a complete list of EDA plots, run the `03-weather-revenue-EDA.R` script. Amoung many interesting relationships, the correlation betwen Temperature and Earnings proved visually appealing. Various nightly specials (many of which could be considered outliers), also proved to be an interesting candidate for the modeling step:
 
-```{r, fig.width=10}
+
+```{r, echo=TRUE, fig.width=10}
 library(tidyverse)
 rev_ts <- read_rds("weather-revenue-data-v002.rds")
 
@@ -78,11 +82,13 @@ rev_ts_model %>% ggplot() +
 
 ```
 
+
+
 # Modeling
 
-Rather than attempting to create a highly predictive model, our goal here is purely inferential. In such a case, simple linear models may prove to be the best tool since they are comuputationally negligible and hihgly interpretable. 
+Inference is our goal here (rather than predictive capability). For this case, a simple linear model may prove to be the best tool since they are comuputationally negligible and hihgly interpretable.
 
-Let's look at the relationship bettwen the `Earnings` variable and both `Temp` and `Precipitation`
+Let's look at the relationship bettwen `Earnings` and both `Temp` and `Precipitation`
 
 ```{r}
 
@@ -99,17 +105,49 @@ rev_ts_model <-
   filter(Earnings>0) %>% 
   filter(!is.na(Earnings))
 
+
 # modeling temp -----------------------------------------------------------
 
 f4 <- as.formula(Earnings ~ Mean_TemperatureF)
 
 f4_lm <- lm(formula = f4
-            , data = rev_ts_model %>% filter(Earnings<4000)
+            , data = rev_ts_model
 )
 summary(f4_lm)
-
 ```
 
+With an adjusted R squared of only `r round(as.numeric(summary(f4_lm)$adj.r.squared),2)`, the model accounts for very littel of the error in the data. From our EDA above, we can conclude that the relationship between `Temperature` and `Earnings` is not strictly linear. In fact, it appears that when tempuratures are too hot, the Earnings go down somewhat, creating a polynomial distribution similar to a parabola, or a rainbow. 
+
+Fitting a polynomial model to the data reveals that earnings peak around 75 degrees F, then start to decline. This suggests that days that are too hot are costing the bar money.
+
+```{r}
+library(modelr)
+
+
+f4_poly <- as.formula(Earnings ~ poly(Mean_TemperatureF,5))
+
+f4_poly_lm <- lm(formula = f4_poly
+                 , data = rev_ts_model %>% filter(Earnings<4000)
+)
+
+rev_ts_model %>% 
+  data_grid(Mean_TemperatureF) %>% 
+  add_predictions(f4_poly_lm) %>% 
+  ggplot()+
+  aes(x = Mean_TemperatureF, y  = pred) +
+  geom_line(color="skyblue", size = 2)+
+  geom_point(data=rev_ts_model %>% filter(Earnings<4000), aes(x = Mean_TemperatureF, y = Earnings))+
+  geom_vline(aes(xintercept = 75),color = "darkgreen", alpha = 0.5)+
+  theme_minimal()+
+  ggthemes::scale_color_tableau()+
+  labs(y = "Earnings"
+       ,x = "Mean Temperature")
+
+summary(f4_poly_lm)
+```
+
+
+Rain, on the other hand, seems to have little to no impact on Earnings:
 
 ```{r}
 
@@ -121,6 +159,7 @@ f5_lm <- lm(formula = f5
             , data = rev_ts_model
 )
 summary(f5_lm)
+
 ```
 
 

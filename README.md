@@ -12,7 +12,24 @@ There are many potenital "stations" you can gather weather data from. It is impo
 
 I modified the `getWeatherForYear` function slightly, as the out-of-the-box solution wasn't scraping the API correctly. In addition, I found that scraping the years individually worked, while supplying a range of dates did not. If you wanted to scrape several years of data, one of the `purrr::map()` funtions could make that possible.
 
-The final data was concatenated into a single dataframe and written to disk for analysis:
+``` r
+getWeatherForYear2 <- 
+  function (station_id, year, station_type = "airportCode", opt_detailed = TRUE, 
+            opt_write_to_file = FALSE, opt_all_columns = TRUE) 
+  {
+    if (year == (1900 + as.POSIXlt(Sys.Date())$year)) {
+      last_day <- Sys.Date()
+    }
+    else {
+      last_day <- paste0(year, "-12-31")
+    }
+    first_day <- paste0(year, "-01-01")
+    getWeatherForDate(station_id, first_day, last_day, station_type, 
+                      opt_detailed, opt_all_columns = opt_all_columns)
+  }
+```
+
+The final is was concatenated into a single dataframe and written to disk for analysis:
 
 |  Year| EST      |  Max\_TemperatureF|  Mean\_TemperatureF|  Min\_TemperatureF|  Max\_Dew\_PointF|  MeanDew\_PointF|  Min\_DewpointF|  Max\_Humidity|  Mean\_Humidity|  Min\_Humidity|  Max\_Sea\_Level\_PressureIn|  Mean\_Sea\_Level\_PressureIn|  Min\_Sea\_Level\_PressureIn|  Max\_VisibilityMiles|  Mean\_VisibilityMiles|  Min\_VisibilityMiles|  Max\_Wind\_SpeedMPH|  Mean\_Wind\_SpeedMPH|  Max\_Gust\_SpeedMPH|  PrecipitationIn|  CloudCover| Events    |  WindDirDegrees| Date       | EDT |
 |-----:|:---------|------------------:|-------------------:|------------------:|-----------------:|----------------:|---------------:|--------------:|---------------:|--------------:|----------------------------:|-----------------------------:|----------------------------:|---------------------:|----------------------:|---------------------:|--------------------:|---------------------:|--------------------:|----------------:|-----------:|:----------|---------------:|:-----------|:----|
@@ -27,33 +44,88 @@ EDA
 
 For a complete list of EDA plots, run the `03-weather-revenue-EDA.R` script. Amoung many interesting relationships, the correlation betwen Temperature and Earnings proved visually appealing. Various nightly specials (many of which could be considered outliers), also proved to be an interesting candidate for the modeling step:
 
+``` r
+library(tidyverse)
+rev_ts <- read_rds("weather-revenue-data-v002.rds")
+
+rev_ts_model <- 
+  rev_ts %>% 
+  mutate(Special_ind = if_else(is.na(Special),FALSE,TRUE)) %>% 
+  filter(Earnings>0) %>% 
+  filter(!is.na(Earnings))
+
+
+# specials indicator ------------------------------------------------------
+rev_ts_model %>% ggplot() + 
+  aes(x = Earnings, y = Mean_TemperatureF, label = Special) + 
+  geom_point(aes(color = Special_ind)) + 
+  geom_smooth(method="lm")+
+  theme_minimal()+
+  ggthemes::scale_color_fivethirtyeight()+
+  labs(title = "Do Specials Earn Extra Money?"
+       ,y = "Mean Tempurature (F)"
+       ,col = "Special?")
+```
+
 ![](README_files/figure-markdown_github/unnamed-chunk-3-1.png)
 
 Modeling
 ========
 
-Rather than attempting to create a highly predictive model, our goal here is purely inferential. In such a case, simple linear models may prove to be the best tool since they are comuputationally negligible and hihgly interpretable.
+Inference is our goal here (rather than predictive capability). For this case, a simple linear model may prove to be the best tool since they are comuputationally negligible and hihgly interpretable.
 
-Let's look at the relationship bettwen the `Earnings` variable and both `Temp` and `Precipitation`
+Let's look at the relationship bettwen `Earnings` and both `Temp` and `Precipitation`
 
     ## 
     ## Call:
-    ## lm(formula = f4, data = rev_ts_model %>% filter(Earnings < 4000))
+    ## lm(formula = f4, data = rev_ts_model)
     ## 
     ## Residuals:
     ##     Min      1Q  Median      3Q     Max 
-    ## -1547.1  -462.7  -130.6   342.5  2601.7 
+    ## -1553.5  -496.4  -162.9   329.4  4657.5 
     ## 
     ## Coefficients:
     ##                   Estimate Std. Error t value Pr(>|t|)    
-    ## (Intercept)       -133.402    196.417  -0.679    0.497    
-    ## Mean_TemperatureF   19.692      2.782   7.079 6.54e-12 ***
+    ## (Intercept)        -18.370    217.067  -0.085    0.933    
+    ## Mean_TemperatureF   18.429      3.075   5.994 4.54e-09 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## Residual standard error: 640.3 on 401 degrees of freedom
-    ## Multiple R-squared:  0.1111, Adjusted R-squared:  0.1089 
-    ## F-statistic: 50.11 on 1 and 401 DF,  p-value: 6.536e-12
+    ## Residual standard error: 714.1 on 404 degrees of freedom
+    ## Multiple R-squared:  0.08167,    Adjusted R-squared:  0.07939 
+    ## F-statistic: 35.93 on 1 and 404 DF,  p-value: 4.542e-09
+
+With an adjusted R squared of only 0.08, the model accounts for very littel of the error in the data. From our EDA above, we can conclude that the relationship between `Temperature` and `Earnings` is not strictly linear. In fact, it appears that when tempuratures are too hot, the Earnings go down somewhat, creating a polynomial distribution similar to a parabola, or a rainbow.
+
+Fitting a polynomial model to the data reveals that earnings peak around 75 degrees F, then start to decline. This suggests that days that are too hot are costing the bar money.
+
+![](README_files/figure-markdown_github/unnamed-chunk-5-1.png)
+
+    ## 
+    ## Call:
+    ## lm(formula = f4_poly, data = rev_ts_model %>% filter(Earnings < 
+    ##     4000))
+    ## 
+    ## Residuals:
+    ##     Min      1Q  Median      3Q     Max 
+    ## -1349.0  -392.5  -105.5   363.2  2428.0 
+    ## 
+    ## Coefficients:
+    ##                              Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept)                  1238.590     30.836  40.167  < 2e-16 ***
+    ## poly(Mean_TemperatureF, 5)1  4532.537    619.029   7.322 1.37e-12 ***
+    ## poly(Mean_TemperatureF, 5)2 -3016.531    619.029  -4.873 1.59e-06 ***
+    ## poly(Mean_TemperatureF, 5)3 -1510.069    619.029  -2.439   0.0151 *  
+    ## poly(Mean_TemperatureF, 5)4    -3.454    619.029  -0.006   0.9956    
+    ## poly(Mean_TemperatureF, 5)5   939.349    619.029   1.517   0.1299    
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 619 on 397 degrees of freedom
+    ## Multiple R-squared:  0.1774, Adjusted R-squared:  0.167 
+    ## F-statistic: 17.12 on 5 and 397 DF,  p-value: 2.406e-15
+
+Rain, on the other hand, seems to have little to no impact on Earnings:
 
     ## 
     ## Call:
