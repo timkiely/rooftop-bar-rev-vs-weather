@@ -36,7 +36,8 @@ rev_ts_model %>% ggplot() +
 # rain indicator ----------------------------------------------------------
 plotly::ggplotly(rev_ts %>% ggplot() + 
                    aes(x = Earnings, y = Mean_TemperatureF, label = Special) + 
-                   geom_point(aes(color = Rain_ind)) + geom_smooth(method="lm"))
+                   geom_point(aes(color = Rain_ind)) + geom_smooth(method="lm")
+                 )
 
 
 
@@ -55,14 +56,14 @@ rev_ts_model %>% ggplot() + aes(x = log(Earnings), y = Mean_TemperatureF) + geom
 
 # revenue when it rains? --------------------------------------------------
 
-rev_ts %>%
-  group_by(Year,Rain_ind) %>% 
-  summarise(Av_Rev = mean(Earnings, na.rm=T)
-            ,min(Earnings,na.rm=T),max(Earnings,na.rm=T))
-
-ggplot() + aes(x = log(Earnings), y = Mean_TemperatureF) + 
-  geom_point() + geom_smooth()
-
+rev_ts %>% 
+  filter(Year == 2016) %>% 
+  mutate(Temp_bucket = cut(Mean_TemperatureF, breaks = seq(from=10,to=100,by=5))) %>%
+  group_by(Temp_bucket) %>%
+  summarise(Total_days=n(),Tot_Rev = sum(Earnings,na.rm=T),Av_Rev = mean(Earnings, na.rm = T)
+            ,"Days Operating" = sum(!is.na(Earnings))) %>% 
+  filter(!is.na(Temp_bucket)) %>% 
+  gather(Var, Value, -Temp_bucket)
 
 
 

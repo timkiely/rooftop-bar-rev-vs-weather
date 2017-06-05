@@ -12,9 +12,116 @@ We're interested in the revenues of a rooftop bar in NYC vs the weather on corre
 
 # Data
 
+The revenue data was obtained independently directly from the hotel bar. The weather data was scraped from [weatherunderground.com](https://www.wunderground.com/) using the `library(weatherData)` package. 
+
+There are many potenital "stations" you can gather weather data from. It is important to find not just the most physically proximate station, but also to find a station with consitent, clean data. Some of the data API functions did not return the correct data, or the time series it returned was unduly censcored. to that end, `getStationCode("New York", region = "NY")` was helpful in retrieving the most reliable station for the NYC area: LGA. 
+
+I modified the `getWeatherForYear` function slightly, as the out-of-the-box solution wasn't scraping the API correctly. In addition, I found that scraping the years individually worked, while supplying a range of dates did not. If you wanted to scrape several years of data, one of the `purrr::map()` funtions could make that possible.  
+
+```{r, eval=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+
+getWeatherForYear2 <- 
+  function (station_id, year, station_type = "airportCode", opt_detailed = TRUE, 
+            opt_write_to_file = FALSE, opt_all_columns = TRUE) 
+  {
+    if (year == (1900 + as.POSIXlt(Sys.Date())$year)) {
+      last_day <- Sys.Date()
+    }
+    else {
+      last_day <- paste0(year, "-12-31")
+    }
+    first_day <- paste0(year, "-01-01")
+    getWeatherForDate(station_id, first_day, last_day, station_type, 
+                      opt_detailed, opt_all_columns = opt_all_columns)
+  }
+
+```
+
+The final data was concatenated into a single dataframe and written to disk for analysis:
+
+```{r}
+
+suppressMessages({
+  
+  library(tidyverse)
+  readr::read_csv("Weather Data/Weather-NYC-2017-05-30.csv", n_max = 5) %>% knitr::kable() 
+  
+})
+```
+
 
 # EDA
 
+For a complete list of EDA plots, run the `03-weather-revenue-EDA.R` script. Amoung many interesting relationships, the correlation betwen Temperature and Earnings proved visually appealing. Various nightly specials (many of which could be considered outliers), also proved to be an interesting candidate for the modeling step:
+
+```{r, fig.width=10}
+library(tidyverse)
+rev_ts <- read_rds("weather-revenue-data-v002.rds")
+
+rev_ts_model <- 
+  rev_ts %>% 
+  mutate(Special_ind = if_else(is.na(Special),FALSE,TRUE)) %>% 
+  filter(Earnings>0) %>% 
+  filter(!is.na(Earnings))
+
+
+# specials indicator ------------------------------------------------------
+rev_ts_model %>% ggplot() + 
+  aes(x = Earnings, y = Mean_TemperatureF, label = Special) + 
+  geom_point(aes(color = Special_ind)) + 
+  geom_smooth(method="lm")+
+  theme_minimal()+
+  ggthemes::scale_color_fivethirtyeight()+
+  labs(title = "Do Specials Earn Extra Money?"
+       ,y = "Mean Tempurature (F)"
+       ,col = "Special?")
+
+```
 
 # Modeling
+
+Rather than attempting to create a highly predictive model, our goal here is purely inferential. In such a case, simple linear models may prove to be the best tool since they are comuputationally negligible and hihgly interpretable. 
+
+Let's look at the relationship bettwen the `Earnings` variable and both `Temp` and `Precipitation`
+
+```{r}
+
+library(tidyverse)
+
+rev_ts <- read_rds("weather-revenue-data-v002.rds")
+
+rev_ts_model <- 
+  rev_ts %>% mutate(Happy_Hour = grepl("Happy Hour",Special)
+                    , Special_ind = ifelse(is.na(Special),FALSE,TRUE)
+                    , Rain_ind = ifelse(PrecipitationIn>0.5,TRUE,FALSE)
+                    , Rain_ind = ifelse(is.na(Rain_ind),FALSE,Rain_ind)
+                    , Events = factor(Events)) %>% 
+  filter(Earnings>0) %>% 
+  filter(!is.na(Earnings))
+
+# modeling temp -----------------------------------------------------------
+
+f4 <- as.formula(Earnings ~ Mean_TemperatureF)
+
+f4_lm <- lm(formula = f4
+            , data = rev_ts_model %>% filter(Earnings<4000)
+)
+summary(f4_lm)
+
+```
+
+
+```{r}
+
+# effect of rain on response ----------------------------------------------
+
+f5 <- as.formula(Earnings ~ PrecipitationIn)
+
+f5_lm <- lm(formula = f5
+            , data = rev_ts_model
+)
+summary(f5_lm)
+```
+
+
 

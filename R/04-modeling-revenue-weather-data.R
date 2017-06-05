@@ -8,12 +8,24 @@ rev_ts <- readRDS("weather-revenue-data-v002.rds")
 
 rev_ts_model <- 
   rev_ts %>% mutate(Happy_Hour = grepl("Happy Hour",Special)
-                    ,Special_ind = ifelse(is.na(Special),FALSE,TRUE)
-                    ,Rain_ind = ifelse(PrecipitationIn>0.5,TRUE,FALSE)
-                    ,Events = factor(Events)) %>% 
+                    , Special_ind = ifelse(is.na(Special),FALSE,TRUE)
+                    , Rain_ind = ifelse(PrecipitationIn>0.5,TRUE,FALSE)
+                    , Rain_ind = ifelse(is.na(Rain_ind),FALSE,Rain_ind)
+                    , Events = factor(Events)) %>% 
   filter(Earnings>0) %>% 
   filter(!is.na(Earnings))
 
+
+
+rev_ts_model_ex_specials <- 
+  rev_ts %>% mutate(Happy_Hour = grepl("Happy Hour",Special)
+                    , Special_ind = ifelse(is.na(Special),FALSE,TRUE)
+                    , Rain_ind = ifelse(PrecipitationIn>0.5,TRUE,FALSE)
+                    , Rain_ind = ifelse(is.na(Rain_ind),FALSE,Rain_ind)
+                    , Events = factor(Events)) %>% 
+  filter(Earnings>0) %>% 
+  filter(!is.na(Earnings)) %>% 
+  filter(Special_ind==FALSE)
 
 
 # generate formula text  ------------------------------------------------------
@@ -131,6 +143,14 @@ summary(f4_lm)
 
 
 
+# effect of rain on response ----------------------------------------------
+
+f5 <- as.formula(Earnings ~ PrecipitationIn)
+
+f5_lm <- lm(formula = f5
+            , data = rev_ts_model
+)
+summary(f5_lm)
 
 
 
