@@ -1,10 +1,10 @@
 
-
+rm(list=ls())
 library(tidyverse)
 library(stringr)
 
 
-rev_data <- read_csv("Daily Bar Revenue - FFI.csv")
+rev_data <- read_csv("Bar Revenue Data/Daily Bar Revenue.csv")
 rev_data %>% glimpse()
 
 # create date variables -------------------------------------------------------
@@ -77,7 +77,7 @@ all_date_seq <- seq.Date(from = min(rev_data_clean$Date_actual)
 # weather_raw <- read_csv("Weather-Chelsea-NY.csv")
 
 # improived data: 
-weather_raw <- read_csv("Weather-NYC-2017-05-30.csv")
+weather_raw <- read_csv("Weather Data/Weather-NYC-2017-05-30.csv")
 
                                                       
 
