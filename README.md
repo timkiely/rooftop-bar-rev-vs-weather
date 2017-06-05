@@ -1,16 +1,16 @@
-The Weathers Effect on Rooftop Bar Revenues
+Effect of Weather on Rooftop Bar Revenues
 ================
 
-We're interested in the revenues of a rooftop bar in NYC vs the weather on corresponding days. Is there and headroom for revenue growth by, for example, building an enclosure? Would heating or covering the roofdeck bring in additional revenue? How much do you lose per year to rain?
+We're interested in the revenues of a rooftop bar in NYC vs the weather on corresponding days. Would heating or covering the roof deck bring in additional revenue?
 
 Data
 ====
 
-The revenue data was obtained independently directly from the hotel bar. The weather data was scraped from [weatherunderground.com](https://www.wunderground.com/) using the `library(weatherData)` package.
+The revenue data was obtained independently directly from a hotel bar. The weather data was scraped from [weatherunderground.com](https://www.wunderground.com/) using the `library(weatherData)` package.
 
-There are many potenital "stations" you can gather weather data from. It is important to find not just the most physically proximate station, but also to find a station with consitent, clean data. Some of the data API functions did not return the correct data, or the time series it returned was unduly censcored. to that end, `getStationCode("New York", region = "NY")` was helpful in retrieving the most reliable station for the NYC area: LGA.
+There are many potential "stations" from which to gather weather data. It is important to find not just the most physically proximate station, but also a station with consistent, clean data. Some of the data API functions did not return the correct data. To that end, `getStationCode("New York", region = "NY")` was helpful in retrieving the most reliable station for the NYC area: LGA.
 
-I modified the `getWeatherForYear` function slightly, as the out-of-the-box solution wasn't scraping the API correctly. In addition, I found that scraping the years individually worked, while supplying a range of dates did not. If you wanted to scrape several years of data, one of the `purrr::map()` funtions could make that possible.
+I modified the `getWeatherForYear` function slightly, as the out-of-the-box solution wasn't scraping the API correctly. In addition, I found that scraping the years individually worked, while supplying a range of dates did not. If you wanted to scrape several years of data, one of the `purrr::map()` functions could make that possible.
 
 ``` r
 getWeatherForYear2 <- 
@@ -29,7 +29,7 @@ getWeatherForYear2 <-
   }
 ```
 
-The final is was concatenated into a single dataframe and written to disk for analysis:
+The data is was concatenated into a single dataframe and written to disk for analysis:
 
 ``` r
 suppressMessages({
@@ -51,7 +51,7 @@ suppressMessages({
 EDA
 ===
 
-For a complete list of EDA plots, run the `03-weather-revenue-EDA.R` script. Amoung many interesting relationships, the correlation betwen Temperature and Earnings proved visually appealing. Various nightly specials (many of which could be considered outliers), also proved to be an interesting candidate for the modeling step:
+For a complete list of EDA plots, run the `03-weather-revenue-EDA.R` script. Among many interesting relationships, the correlation between Temperature and Earnings proved visually appealing. Various nightly specials (many of which could be considered outliers), also proved to be an interesting candidate for the modeling step:
 
 ``` r
 library(tidyverse)
@@ -81,9 +81,9 @@ rev_ts_model %>% ggplot() +
 Modeling
 ========
 
-Inference is our goal here (rather than predictive capability). For this case, a simple linear model may prove to be the best tool since they are comuputationally negligible and hihgly interpretable.
+Inference is our goal here (rather than predictive capability). For this case, a simple linear model may prove to be the best tool since they are computationally negligible and highly interpret-able.
 
-Let's look at the relationship bettwen `Earnings` and both `Temp` and `Precipitation`
+Let's look at the relationship between `Earnings` and both `Temp` and `Precipitation`
 
 ``` r
 library(tidyverse)
@@ -129,7 +129,7 @@ summary(f4_lm)
     ## Multiple R-squared:  0.08167,    Adjusted R-squared:  0.07939 
     ## F-statistic: 35.93 on 1 and 404 DF,  p-value: 4.542e-09
 
-With an adjusted R squared of only 0.08, the model accounts for very little of the error in the data. From our EDA above, we can conclude that the relationship between `Temperature` and `Earnings` is not strictly linear. In fact, it appears that when tempuratures are too hot, the Earnings go down somewhat, creating a polynomial distribution similar to a parabola, or a rainbow.
+With an adjusted R squared of only 0.08, the model accounts for very little of the error in the data. From our EDA above, we can conclude that the relationship between `Temperature` and `Earnings` is not strictly linear. In fact, it appears that when temperatures are too hot, the Earnings go down somewhat, creating a polynomial distribution similar to a parabola, or a rainbow.
 
 Fitting a polynomial model to the data reveals that earnings peak around 75 degrees F, then start to decline. This suggests that days that are too hot are costing the bar money.
 
@@ -187,7 +187,7 @@ summary(f4_poly_lm)
     ## Multiple R-squared:  0.1774, Adjusted R-squared:  0.167 
     ## F-statistic: 17.12 on 5 and 397 DF,  p-value: 2.406e-15
 
-Rain, on the other hand, seems to have little to no linear relation to Earnings. This is due to the fact that many days have very little precipitation, which may occur in the morning or afternoon (when the bar isn't open). A more robust feature here would be precipitation during operating hours. This could be scraped from the wearther data API using `detailed=TRUE` in the call, however, the incremental benefit this would bring us is not worth the effort for this explorartory exercize.
+Rain, on the other hand, seems to have little to no linear relation to Earnings. This is due to the fact that many days have very little precipitation, which may occur in the morning or afternoon (when the bar isn't open). A more robust feature here would be precipitation during operating hours. This could be scraped from the weather data API using `detailed=TRUE` in the call, however, the incremental benefit this would bring us is not worth the effort for this exploratory exercise.
 
 ``` r
 library(modelr)
@@ -269,7 +269,7 @@ summary(f5_lm)
     ## Multiple R-squared:  0.003288,   Adjusted R-squared:  0.0003908 
     ## F-statistic: 1.135 on 1 and 344 DF,  p-value: 0.2875
 
-Finally, let's look at whether advertising a special increases the Earings in a meaningful way
+Finally, let's look at whether advertising a special increases the Earnings in a meaningful way
 
 ``` r
 rev_ts_model %>% 
@@ -286,7 +286,7 @@ rev_ts_model %>%
 
 ![](README_files/figure-markdown_github/unnamed-chunk-7-1.png)
 
-Earnings seem to increase slightly when offers (e.g., Hapy Hour specials) are offered. Is this statisticaly significant? According to our model, there is a weak but statistically significant linear relationship between Specials and Earnings. The model estimates that, all else equal, Specials increase the daily earnings by about $200 on average.
+Earnings seem to increase slightly when offers (e.g., Happy Hour specials) are offered. Is this statistically significant? According to our model, there is a weak but statistically significant linear relationship between Specials and Earnings. The model estimates that, all else equal, Specials increase the daily earnings by about $200 on average.
 
 ``` r
 # effect of advertising a speal on response -------------------------------
@@ -321,4 +321,4 @@ summary(f6_lm)
 Conclusion
 ==========
 
-Temperature can be used to effectively model Rooftop Bar Earnings up to a point. The relationship is not linear, however. Earnings tend to peak around 75 degrees (F), then trail off as the air gets warmer. Reccomendations to increase revenue might include building an enclosure of some kind to provide both heating and shade which will enable the bar to operate more days out of the year near full capacity.
+Temperature can be used to effectively model Rooftop Bar Earnings up to a point. The relationship is not linear, however. Earnings tend to peak around 75 degrees (F), then trail off as the air gets warmer. Recommendations to increase revenue might include building an enclosure of some kind to provide both heating and shade which will enable the bar to operate more days out of the year near full capacity.
