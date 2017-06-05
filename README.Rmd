@@ -1,11 +1,12 @@
 ---
-title: "Rooftop Bar Revenue vs Weather"
+title: "The Weathers Effect on Rooftop Bar Revenues"
 output: github_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE
-                      , show = TRUE)
+knitr::opts_chunk$set(echo = TRUE
+                      , show = TRUE
+                      , fig.width=10)
 ```
 
 We're interested in the revenues of a rooftop bar in NYC vs the weather on corresponding days. Is there and headroom for revenue growth by, for example, building an enclosure? Would heating or covering the roofdeck bring in additional revenue? How much do you lose per year to rain?
@@ -116,7 +117,7 @@ f4_lm <- lm(formula = f4
 summary(f4_lm)
 ```
 
-With an adjusted R squared of only `r round(as.numeric(summary(f4_lm)$adj.r.squared),2)`, the model accounts for very littel of the error in the data. From our EDA above, we can conclude that the relationship between `Temperature` and `Earnings` is not strictly linear. In fact, it appears that when tempuratures are too hot, the Earnings go down somewhat, creating a polynomial distribution similar to a parabola, or a rainbow. 
+With an adjusted R squared of only `r round(as.numeric(summary(f4_lm)$adj.r.squared),2)`, the model accounts for very little of the error in the data. From our EDA above, we can conclude that the relationship between `Temperature` and `Earnings` is not strictly linear. In fact, it appears that when tempuratures are too hot, the Earnings go down somewhat, creating a polynomial distribution similar to a parabola, or a rainbow. 
 
 Fitting a polynomial model to the data reveals that earnings peak around 75 degrees F, then start to decline. This suggests that days that are too hot are costing the bar money.
 
@@ -147,9 +148,12 @@ summary(f4_poly_lm)
 ```
 
 
-Rain, on the other hand, seems to have little to no impact on Earnings:
+Rain, on the other hand, seems to have little to no linear relation to Earnings. This is due to the fact that many days have very little precipitation, which may occur in the morning or afternoon (when the bar isn't open). A more robust feature here would be precipitation during operating hours. This could be scraped from the wearther data API using `detailed=TRUE` in the call, however, the incremental benefit this would bring us is not worth the effort for this explorartory exercize. 
+
 
 ```{r}
+
+library(modelr)
 
 # effect of rain on response ----------------------------------------------
 
@@ -158,9 +162,58 @@ f5 <- as.formula(Earnings ~ PrecipitationIn)
 f5_lm <- lm(formula = f5
             , data = rev_ts_model
 )
+
+rev_ts_model %>% 
+  filter(PrecipitationIn>0) %>% 
+  data_grid(PrecipitationIn) %>% 
+  add_predictions(f5_lm) %>% 
+  ggplot()+
+  aes(x = PrecipitationIn, y  = pred) +
+  geom_line(color="skyblue", size = 2)+
+  geom_point(data=rev_ts_model %>% filter(Earnings<4000, PrecipitationIn>0), aes(x = PrecipitationIn, y = Earnings))+
+  #geom_vline(aes(xintercept = 75),color = "darkgreen", alpha = 0.5)+
+  theme_minimal()+
+  ggthemes::scale_color_tableau()+
+  labs(y = "Earnings"
+       ,x = "Precipitation in inches")
+
+summary(f4_poly_lm)
+
 summary(f5_lm)
 
 ```
 
+
+Finally, let's look at whether advertising a special increases the Earings in a meaningful way
+
+```{r}
+rev_ts_model %>% 
+  ggplot()+
+  aes(x = Special_ind, y = Earnings, color = Special_ind, group = Special_ind)+
+  geom_boxplot()+
+  geom_jitter()+
+  ggthemes::scale_color_fivethirtyeight()+
+  theme_minimal()+
+  theme(legend.position = "none")+
+  labs(x = "Was a special advertised?"
+       ,col = NULL)
+
+```
+
+Earnings seem to increase slightly when offers (e.g., Hapy Hour specials) are offered. Is this statisticaly significant? According to our model, there is a weak but statistically significant linear relationship between Specials and Earnings. The model estimates that, all else equal, Specials increase the daily earnings by about $200 on average.
+
+```{r}
+# effect of advertising a speal on response -------------------------------
+
+f6 <- as.formula(
+  Earnings ~ Special_ind
+  )
+
+f6_lm <- lm(formula = f6, data = rev_ts_model)
+summary(f6_lm)
+
+```
+
+# Conclusion
 
 
