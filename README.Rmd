@@ -40,6 +40,14 @@ getWeatherForYear2 <-
 ```
 
 
+```
+
+ny_2015 <- getWeatherForYear2(station_id="KLGA", year = 2015)
+ny_2016 <- getWeatherForYear2(station_id="KLGA", year = 2016)
+ny_2017 <- getWeatherForYear2(station_id="KLGA", year = 2017)
+
+```
+
 The data is was concatenated into a single dataframe and written to disk for analysis:
 
 ```{r}
@@ -62,6 +70,8 @@ For a complete list of EDA plots, run the `03-weather-revenue-EDA.R` script. Amo
 library(tidyverse)
 rev_ts <- read_rds("weather-revenue-data-v002.rds")
 
+
+# add a 'Specials' indicator and filter for only days with revenues
 rev_ts_model <- 
   rev_ts %>% 
   mutate(Special_ind = if_else(is.na(Special),FALSE,TRUE)) %>% 
@@ -85,6 +95,8 @@ rev_ts_model %>% ggplot() +
 
 
 # Modeling
+
+## Temperature
 
 Inference is our goal here (rather than predictive capability). For this case, a simple linear model may prove to be the best tool since they are computationally negligible and highly interpret-able.
 
@@ -140,12 +152,14 @@ rev_ts_model %>%
   geom_vline(aes(xintercept = 75),color = "darkgreen", alpha = 0.5)+
   theme_minimal()+
   ggthemes::scale_color_tableau()+
-  labs(y = "Earnings"
-       ,x = "Mean Temperature")
+  labs(title = "Earnings Peak At 75 Degrees"
+       , y = "Earnings"
+       ,x = "Mean Temperature (degrees F)")
 
 summary(f4_poly_lm)
 ```
 
+## Rain
 
 Rain, on the other hand, seems to have little to no linear relation to Earnings. This is due to the fact that many days have very little precipitation, which may occur in the morning or afternoon (when the bar isn't open). A more robust feature here would be precipitation during operating hours. This could be scraped from the weather data API using `detailed=TRUE` in the call, however, the incremental benefit this would bring us is not worth the effort for this exploratory exercise. 
 
@@ -182,6 +196,7 @@ summary(f5_lm)
 
 ```
 
+## Happy Hours
 
 Finally, let's look at whether advertising a special increases the Earnings in a meaningful way
 
@@ -202,6 +217,7 @@ rev_ts_model %>%
 Earnings seem to increase slightly when offers (e.g., Happy Hour specials) are offered. Is this statistically significant? According to our model, there is a weak but statistically significant linear relationship between Specials and Earnings. The model estimates that, all else equal, Specials increase the daily earnings by about $200 on average.
 
 ```{r}
+
 # effect of advertising a speal on response -------------------------------
 
 f6 <- as.formula(

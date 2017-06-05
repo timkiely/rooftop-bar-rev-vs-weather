@@ -29,6 +29,11 @@ getWeatherForYear2 <-
   }
 ```
 
+
+    ny_2015 <- getWeatherForYear2(station_id="KLGA", year = 2015)
+    ny_2016 <- getWeatherForYear2(station_id="KLGA", year = 2016)
+    ny_2017 <- getWeatherForYear2(station_id="KLGA", year = 2017)
+
 The data is was concatenated into a single dataframe and written to disk for analysis:
 
 ``` r
@@ -57,6 +62,8 @@ For a complete list of EDA plots, run the `03-weather-revenue-EDA.R` script. Amo
 library(tidyverse)
 rev_ts <- read_rds("weather-revenue-data-v002.rds")
 
+
+# add a 'Specials' indicator and filter for only days with revenues
 rev_ts_model <- 
   rev_ts %>% 
   mutate(Special_ind = if_else(is.na(Special),FALSE,TRUE)) %>% 
@@ -80,6 +87,9 @@ rev_ts_model %>% ggplot() +
 
 Modeling
 ========
+
+Temperature
+-----------
 
 Inference is our goal here (rather than predictive capability). For this case, a simple linear model may prove to be the best tool since they are computationally negligible and highly interpret-able.
 
@@ -153,8 +163,9 @@ rev_ts_model %>%
   geom_vline(aes(xintercept = 75),color = "darkgreen", alpha = 0.5)+
   theme_minimal()+
   ggthemes::scale_color_tableau()+
-  labs(y = "Earnings"
-       ,x = "Mean Temperature")
+  labs(title = "Earnings Peak At 75 Degrees"
+       , y = "Earnings"
+       ,x = "Mean Temperature (degrees F)")
 ```
 
 ![](README_files/figure-markdown_github/unnamed-chunk-5-1.png)
@@ -186,6 +197,9 @@ summary(f4_poly_lm)
     ## Residual standard error: 619 on 397 degrees of freedom
     ## Multiple R-squared:  0.1774, Adjusted R-squared:  0.167 
     ## F-statistic: 17.12 on 5 and 397 DF,  p-value: 2.406e-15
+
+Rain
+----
 
 Rain, on the other hand, seems to have little to no linear relation to Earnings. This is due to the fact that many days have very little precipitation, which may occur in the morning or afternoon (when the bar isn't open). A more robust feature here would be precipitation during operating hours. This could be scraped from the weather data API using `detailed=TRUE` in the call, however, the incremental benefit this would bring us is not worth the effort for this exploratory exercise.
 
@@ -268,6 +282,9 @@ summary(f5_lm)
     ##   (60 observations deleted due to missingness)
     ## Multiple R-squared:  0.003288,   Adjusted R-squared:  0.0003908 
     ## F-statistic: 1.135 on 1 and 344 DF,  p-value: 0.2875
+
+Happy Hours
+-----------
 
 Finally, let's look at whether advertising a special increases the Earnings in a meaningful way
 
